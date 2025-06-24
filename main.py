@@ -4,7 +4,6 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 
-# Your new working bot token
 TOKEN = "7526432651:AAEFgsQngsHUxp0r6VIcMvJkBDPVAkXkxMc"
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
