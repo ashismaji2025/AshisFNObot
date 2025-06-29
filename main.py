@@ -1,3 +1,4 @@
+import os
 from telegram.ext import Application, CommandHandler, ContextTypes, CallbackContext
 
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN") or "your-token-here"
