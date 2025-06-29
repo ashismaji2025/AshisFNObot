@@ -1,11 +1,15 @@
 import os
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    ContextTypes,
+)
 
-TOKEN = os.getenv("BOT_TOKEN", "PASTE_YOUR_TOKEN_HERE")  # Replace with your actual token if not using secrets
+TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Hello Ashis-da! ✅ Bot is working!")
+    await update.message.reply_text("Hello Ashis‑da! Your AshisFNObot is active 💹")
 
 def main():
     app = ApplicationBuilder().token(TOKEN).build()
