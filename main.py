@@ -1,30 +1,32 @@
-from flask import Flask, request
-from telegram import Bot, Update
-from telegram.ext import CommandHandler, Dispatcher
+import logging
+from flask import Flask
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+
 import os
 
+# Telegram bot token from environment variable
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-bot = Bot(token=TOKEN)
 
-app = Flask(__name__)
+# Setup logging
+logging.basicConfig(level=logging.INFO)
 
-@app.route('/')
-def index():
-    return 'AshisFNObot is alive!'
+# Start command handler
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Hello Ashis-da! Your AshisFNObot is now live 💹")
 
-@app.route(f"/{TOKEN}", methods=["POST"])
-def webhook():
-    update = Update.de_json(request.get_json(force=True), bot)
-    dispatcher.process_update(update)
-    return "OK"
+# Flask server (to keep bot alive in Render)
+app_flask = Flask(__name__)
 
-def start(update, context):
-    update.message.reply_text("Hello Ashis-da! Your AshisFNObot is now active 💹")
+@app_flask.route('/')
+def home():
+    return "AshisFNObot is running."
 
-from telegram.ext import Updater
-updater = Updater(token=TOKEN, use_context=True)
-dispatcher = updater.dispatcher
-dispatcher.add_handler(CommandHandler("start", start))
+# Start the bot
+def run_bot():
+    application = ApplicationBuilder().token(TOKEN).build()
+    application.add_handler(CommandHandler("start", start))
+    application.run_polling()
 
 if __name__ == "__main__":
-    app.run(port=8080)
+    run_bot()
