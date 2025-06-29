@@ -1,18 +1,31 @@
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+import os
+from flask import Flask, request
+from telegram import Update, Bot
+from telegram.ext import Application, CommandHandler, ContextTypes, Dispatcher, CallbackContext
 
-# Replace with your actual bot token
-TOKEN = "7526432651:AAGpowkLKalWPw2w9pjzp5Hm3G797DS9p74"
+TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN") or "your-token-here"
+WEBHOOK_URL = os.environ.get("WEBHOOK_URL") or "https://ashisfnobot.onrender.com/webhook"
 
-# Define the /start command
+bot = Bot(token=TOKEN)
+app = Flask(__name__)
+application = Application.builder().token(TOKEN).build()
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Hello Ashis-da! Your AshisFNObot is now active 💹")
 
-# Main entry point
-def main():
-    app = ApplicationBuilder().token(TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.run_polling()  # <-- This is where .run_polling() is used
+application.add_handler(CommandHandler("start", start))
 
-if __name__ == "__main__":
-    main()
+@app.route('/webhook', methods=["POST"])
+def webhook():
+    update = Update.de_json(request.get_json(force=True), bot)
+    application.update_queue.put(update)
+    return "ok"
+
+@app.route('/')
+def home():
+    return "AshisFNObot is running..."
+
+if __name__ == '__main__':
+    application.initialize()
+    bot.set_webhook(url=WEBHOOK_URL)
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
