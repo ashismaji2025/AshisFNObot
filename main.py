@@ -1,5 +1,4 @@
-import os
-from telegram.ext import Application, CommandHandler, ContextTypes, CallbackContext
+mport os from telegram.ext import Application, CommandHandler, ContextTypes, CallbackContext
 
 TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN") or "your-token-here"
 WEBHOOK_URL = os.environ.get("WEBHOOK_URL") or "https://ashisfnobot.onrender.com/webhook"
