@@ -10,7 +10,7 @@ logging.basicConfig(
 )
 
 # Use your actual token here or from an environment variable
-TOKEN = os.getenv("BOT_TOKEN", "PASTE_YOUR_TOKEN_HERE")
+TOKEN = os.getenv("BOT_TOKEN", "7526432651:AAGpowkLKalWPw2w9pjzp5Hm3G797DS9p74")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Hello Ashis-da! Bot is working perfectly! ✅")
