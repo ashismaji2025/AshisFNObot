@@ -34,9 +34,16 @@ def index():
 
 # Start everything
 if __name__ == "__main__":
-    async def run():
+    import threading
+
+    async def run_bot():
         await application.initialize()
         await application.bot.set_webhook(WEBHOOK_URL)
         await application.start()
-    asyncio.run(run())
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+
+    def run_flask():
+        app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+
+    # Run Flask in a separate thread, so both run in parallel
+    threading.Thread(target=run_flask).start()
+    asyncio.run(run_bot())
