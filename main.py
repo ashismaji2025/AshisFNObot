@@ -1,9 +1,9 @@
 import os
+import asyncio
+import threading
 from flask import Flask, request
 from telegram import Update
-from telegram.ext import (
-    ApplicationBuilder, CommandHandler, ContextTypes
-)
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 WEBHOOK_URL = f"https://ashisfnobot.onrender.com/{TOKEN}"
@@ -28,17 +28,18 @@ async def webhook():
 def index():
     return "AshisFNObot is running."
 
-if __name__ == "__main__":
-    import asyncio
-    import threading
+def run_flask():
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
 
-    # Start Flask in a separate thread
-    def run_flask():
-        app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
-
+async def main():
+    # Start Flask in separate thread
     threading.Thread(target=run_flask).start()
 
-    asyncio.run(application.initialize())
-    asyncio.run(application.bot.set_webhook(url=WEBHOOK_URL))
-    asyncio.run(application.start())
-    asyncio.get_event_loop().run_forever()
+    await application.initialize()
+    await application.bot.set_webhook(url=WEBHOOK_URL)
+    await application.start()
+    await application.updater.start_polling()  # Optional, won't run since webhook handles updates
+    await application.updater.wait_until_closed()  # Wait forever
+
+if __name__ == "__main__":
+    asyncio.run(main())
