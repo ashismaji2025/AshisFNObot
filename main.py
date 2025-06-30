@@ -1,31 +1,34 @@
 import os
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram.ext import (
+    ApplicationBuilder,
+    CommandHandler,
+    ContextTypes,
+)
 from flask import Flask, request
 
 TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
-BOT_USERNAME = "AshisFNObot"
+WEBHOOK_URL = "https://ashisfnobot.onrender.com"
 
-app = Flask(__name__)
-
-telegram_app = ApplicationBuilder().token(TOKEN).build()
+app_flask = Flask(__name__)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Hello Ashis‑da! Your AshisFNObot is active 💹")
 
+telegram_app = ApplicationBuilder().token(TOKEN).build()
 telegram_app.add_handler(CommandHandler("start", start))
 
-# Flask route for Telegram webhook
-@app.route(f"/{TOKEN}", methods=["POST"])
+@app_flask.route(f"/{TOKEN}", methods=["POST"])
 def webhook():
-    update = telegram_app.update_queue.bot._parse_update(request.get_json(force=True))
-    telegram_app.create_task(telegram_app.process_update(update))
+    telegram_app.update_queue.put_nowait(Update.de_json(request.get_json(force=True), telegram_app.bot))
     return "ok"
 
-# Render expects the Flask app to run
+@app_flask.route("/", methods=["GET"])
+async def set_webhook():
+    await telegram_app.bot.set_webhook(url=f"{WEBHOOK_URL}/{TOKEN}")
+    return "Webhook set"
+
 if __name__ == "__main__":
-    telegram_app.run_webhook(
-        listen="0.0.0.0",
-        port=int(os.environ.get("PORT", 10000)),
-        webhook_url=f"https://ashisfnobot.onrender.com/{TOKEN}"
-    )
+    import asyncio
+    asyncio.run(telegram_app.initialize())
+    app_flask.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
