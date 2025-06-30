@@ -1,49 +1,38 @@
 import os
 from flask import Flask, request
 from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes
-import asyncio
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 WEBHOOK_URL = f"https://ashisfnobot.onrender.com/{TOKEN}"
 
-# Initialize Flask app
 app = Flask(__name__)
 
-# Create Telegram app (without ApplicationBuilder)
-application = Application.builder().token(TOKEN).build()
+application = ApplicationBuilder().token(TOKEN).build()
 
-# Async command handler
+# Command handler
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Hello Ashis-da! Your AshisFNObot is working 💹")
 
 application.add_handler(CommandHandler("start", start))
 
-# Webhook route for Telegram
 @app.route(f"/{TOKEN}", methods=["POST"])
 async def webhook():
-    data = request.get_json(force=True)
-    update = Update.de_json(data, application.bot)
+    update = Update.de_json(request.get_json(force=True), application.bot)
     await application.process_update(update)
     return "ok"
 
-# Just a health check
 @app.route("/", methods=["GET"])
-def index():
-    return "AshisFNObot is running."
+async def index():
+    # Optional: Set webhook if not already set
+    await application.bot.set_webhook(WEBHOOK_URL)
+    return "AshisFNObot is running with webhook ✅"
 
-# Start everything
 if __name__ == "__main__":
-    import threading
-
-    async def run_bot():
+    import asyncio
+    async def run():
         await application.initialize()
-        await application.bot.set_webhook(WEBHOOK_URL)
         await application.start()
-
-    def run_flask():
+        await application.updater.start_polling()  # Not used, safe to remove
         app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
-
-    # Run Flask in a separate thread, so both run in parallel
-    threading.Thread(target=run_flask).start()
-    asyncio.run(run_bot())
+    asyncio.run(run())
