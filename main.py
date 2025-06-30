@@ -24,9 +24,7 @@ def webhook():
 
 @app.route("/", methods=["GET"])
 def index():
-    import asyncio
-    asyncio.run(application.bot.set_webhook(WEBHOOK_URL))
-    return "Webhook set"
+    return "AshisFNObot is running."
 
 if __name__ == "__main__":
     import asyncio
