@@ -6,8 +6,7 @@ from telegram.ext import (
     ContextTypes,
 )
 
-# Use environment variable or directly paste token here (for testing only)
-TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "PASTE_YOUR_TOKEN_HERE")
+TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Hello Ashis‑da! Your AshisFNObot is active 💹")
