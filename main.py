@@ -5,7 +5,8 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from signals import get_sample_signal
 
 TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
-WEBHOOK_URL = f"https://ashisfnobot.onrender.com/{TOKEN}"
+WEBHOOK_PATH = "/webhook"
+WEBHOOK_URL = f"https://ashisfnobot.onrender.com{WEBHOOK_PATH}"
 
 app = Flask(__name__)
 application = ApplicationBuilder().token(TOKEN).build()
@@ -22,7 +23,7 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
 application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("status", status))
 
-@app.route(f"/{TOKEN}", methods=["POST"])
+@app.route(WEBHOOK_PATH, methods=["POST"])
 def webhook():
     update = Update.de_json(request.get_json(force=True), application.bot)
     application.update_queue.put_nowait(update)
@@ -33,13 +34,14 @@ def index():
     return "AshisFNObot is live 🌐"
 
 if __name__ == "__main__":
+    import threading
     import asyncio
 
-    async def run():
+    async def setup():
         await application.initialize()
         await application.bot.set_webhook(WEBHOOK_URL)
         await application.start()
-        print("Bot is running...")
+        print("Webhook set and application started.")
 
-    asyncio.run(run())
+    threading.Thread(target=lambda: asyncio.run(setup())).start()
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
