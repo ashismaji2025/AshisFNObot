@@ -1,40 +1,42 @@
 import os
-import asyncio
 from flask import Flask, request
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
+import asyncio
 
 TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
-WEBHOOK_URL = f"https://ashisfnobot.onrender.com/{TOKEN}"  # Your live URL
+WEBHOOK_URL = f"https://ashisfnobot.onrender.com/{TOKEN}"
 
+# Initialize Flask app
 app = Flask(__name__)
 
-# Initialize the bot
+# Create Telegram app (without ApplicationBuilder)
 application = Application.builder().token(TOKEN).build()
 
-# Define command handler
+# Async command handler
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Hello Ashis-da! Your AshisFNObot is working 💹")
 
 application.add_handler(CommandHandler("start", start))
 
-# Flask route to receive webhook POST requests
+# Webhook route for Telegram
 @app.route(f"/{TOKEN}", methods=["POST"])
-def telegram_webhook():
-    update = Update.de_json(request.get_json(force=True), application.bot)
-    asyncio.create_task(application.update_queue.put(update))
-    return "OK"
+async def webhook():
+    data = request.get_json(force=True)
+    update = Update.de_json(data, application.bot)
+    await application.process_update(update)
+    return "ok"
 
-# Root URL - sets webhook
+# Just a health check
 @app.route("/", methods=["GET"])
-async def set_webhook():
-    success = await application.bot.set_webhook(url=WEBHOOK_URL)
-    return f"Webhook set: {success}"
+def index():
+    return "AshisFNObot is running."
 
-# Start Flask and bot
+# Start everything
 if __name__ == "__main__":
-    async def main():
+    async def run():
         await application.initialize()
-        app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
-
-    asyncio.run(main())
+        await application.bot.set_webhook(WEBHOOK_URL)
+        await application.start()
+    asyncio.run(run())
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
