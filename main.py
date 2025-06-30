@@ -1,13 +1,14 @@
 import os
 from flask import Flask, request
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram.ext import (
+    ApplicationBuilder, CommandHandler, ContextTypes
+)
 
 TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 WEBHOOK_URL = f"https://ashisfnobot.onrender.com/{TOKEN}"
 
 app = Flask(__name__)
-
 application = ApplicationBuilder().token(TOKEN).build()
 
 # Command handler
@@ -17,9 +18,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 application.add_handler(CommandHandler("start", start))
 
 @app.route(f"/{TOKEN}", methods=["POST"])
-def webhook():
-    update = Update.de_json(request.get_json(force=True), application.bot)
-    application.update_queue.put_nowait(update)
+async def webhook():
+    data = request.get_json(force=True)
+    update = Update.de_json(data, application.bot)
+    await application.process_update(update)
     return "ok"
 
 @app.route("/", methods=["GET"])
@@ -28,5 +30,15 @@ def index():
 
 if __name__ == "__main__":
     import asyncio
+    import threading
+
+    # Start Flask in a separate thread
+    def run_flask():
+        app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+
+    threading.Thread(target=run_flask).start()
+
     asyncio.run(application.initialize())
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+    asyncio.run(application.bot.set_webhook(url=WEBHOOK_URL))
+    asyncio.run(application.start())
+    asyncio.get_event_loop().run_forever()
