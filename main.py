@@ -23,8 +23,9 @@ def webhook():
     return "ok"
 
 @app.route("/", methods=["GET"])
-async def index():
-    await application.bot.set_webhook(WEBHOOK_URL)
+def index():
+    import asyncio
+    asyncio.run(application.bot.set_webhook(WEBHOOK_URL))
     return "Webhook set"
 
 if __name__ == "__main__":
