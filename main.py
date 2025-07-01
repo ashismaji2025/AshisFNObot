@@ -32,9 +32,10 @@ app = Flask(__name__)
 
 @app.route(WEBHOOK_PATH, methods=["POST"])
 def webhook():
-    update = Update.de_json(request.get_json(force=True), application.bot)
-    asyncio.get_event_loop().run_until_complete(application.process_update(update))
-    return "OK"
+    if request.method == "POST":
+        update = Update.de_json(request.get_json(force=True), application.bot)
+        asyncio.run(application.process_update(update))  # ✅ Use run, not create_task
+        return "ok", 200
 
 @app.route("/", methods=["GET"])
 def index():
