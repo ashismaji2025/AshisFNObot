@@ -22,7 +22,7 @@ application.add_handler(CommandHandler("start", start))
 def webhook():
     if request.method == "POST":
         update = Update.de_json(request.get_json(force=True), application.bot)
-        asyncio.run(application.process_update(update))
+        asyncio.run(application.process_update(update))  # ✅ CORRECT
         return "ok"
 
 # --- Main block ---
