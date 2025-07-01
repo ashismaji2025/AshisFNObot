@@ -1,51 +1,57 @@
 import os
-import asyncio
 from flask import Flask, request
 from telegram import Update
 from telegram.ext import (
-    Application, CommandHandler, ContextTypes
+    ApplicationBuilder, CommandHandler, ContextTypes
 )
 from signals import get_sample_signal
 
-# Setup Flask
-app = Flask(__name__)
-
-# Bot token and webhook
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "7526432651:AAE-H5jjoPitEw5WtZ3TxWRg5hhqLZvcnGs")
+TOKEN = os.getenv("BOT_TOKEN")
 WEBHOOK_PATH = "/webhook"
 WEBHOOK_URL = f"https://ashisfnobot.onrender.com{WEBHOOK_PATH}"
 
-# Define handlers
+# Flask App
+app = Flask(__name__)
+
+# Telegram App
+application = ApplicationBuilder().token(TOKEN).build()
+
+# Handlers
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("🤖 Hello! AshisF&Obot is active.")
+    await update.message.reply_text("🌟 Welcome to AshisF&Obot! Use /status or /signal to continue.")
 
 async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("✅ Bot is alive and ready, Ashis-da!")
+    await update.message.reply_text("✅ AshisF&Obot is active and ready!")
 
 async def signal(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_markdown(get_sample_signal())
+    signal_text = get_sample_signal()
+    await update.message.reply_markdown(signal_text)
 
-# Create application
-application = Application.builder().token(BOT_TOKEN).build()
-
+# Add handlers
 application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("status", status))
 application.add_handler(CommandHandler("signal", signal))
 
-# Flask route to handle Telegram webhook
+# Flask route for webhook
 @app.route(WEBHOOK_PATH, methods=["POST"])
-def webhook():
+async def webhook():
     update = Update.de_json(request.get_json(force=True), application.bot)
-    asyncio.create_task(application.process_update(update))
-    return "OK", 200
+    await application.process_update(update)
+    return "ok"
 
-# Set webhook and run server
-async def run():
-    await application.initialize()
-    await application.bot.set_webhook(WEBHOOK_URL)
-    print("✅ Webhook set to", WEBHOOK_URL)
-    await application.start()
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+@app.route("/", methods=["GET"])
+async def index():
+    return "AshisF&Obot is live 💥"
 
+# Main entry
 if __name__ == "__main__":
+    import asyncio
+
+    async def run():
+        await application.initialize()
+        await application.bot.set_webhook(url=WEBHOOK_URL)
+        await application.start()
+        await application.updater.start_polling()
+        await application.updater.idle()
+
     asyncio.run(run())
