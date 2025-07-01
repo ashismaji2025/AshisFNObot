@@ -18,11 +18,12 @@ async def start(update: Update, context):
 application.add_handler(CommandHandler("start", start))
 
 # --- Webhook route ---
-@app.route("/webhook", methods=["POST"])
+@app.route('/webhook', methods=['POST'])
 def webhook():
-    update = Update.de_json(request.get_json(force=True), application.bot)
-    asyncio.run(application.process_update(update))
-    return "ok", 200
+    if request.method == "POST":
+        update = Update.de_json(request.get_json(force=True), application.bot)
+        asyncio.run(application.process_update(update))
+        return "ok"
 
 # --- Main block ---
 if __name__ == "__main__":
