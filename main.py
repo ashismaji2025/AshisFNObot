@@ -46,11 +46,13 @@ def index():
 
 # --- Launch ---
 if __name__ == "__main__":
-    async def run():
+    import os
+
+    async def set_webhook():
         await application.initialize()
         await application.bot.set_webhook(WEBHOOK_URL)
-        await application.start()
-        await application.updater.start_polling()
-        await application.updater.idle()
 
-    asyncio.run(run())
+    import asyncio
+    asyncio.run(set_webhook())
+
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
