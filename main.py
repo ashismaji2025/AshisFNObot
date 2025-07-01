@@ -46,5 +46,5 @@ if __name__ == "__main__":
         await application.bot.set_webhook(WEBHOOK_URL)
         await application.start()
 
-    asyncio.run(setup())
-    app.run(host="0.0.0.0", port=10000)
+    PORT = int(os.environ.get("PORT", 5000))  # fallback to 5000
+app.run(host="0.0.0.0", port=PORT)
