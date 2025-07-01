@@ -1,4 +1,5 @@
 import os
+import asyncio
 from flask import Flask, request
 from telegram import Update
 from telegram.ext import (
@@ -6,52 +7,44 @@ from telegram.ext import (
 )
 from signals import get_sample_signal
 
-TOKEN = os.getenv("BOT_TOKEN")
-WEBHOOK_PATH = "/webhook"
+TOKEN = TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
+WEBHOOK_PATH = f"/webhook"
 WEBHOOK_URL = f"https://ashisfnobot.onrender.com{WEBHOOK_PATH}"
 
-# Flask App
-app = Flask(__name__)
-
-# Telegram App
 application = ApplicationBuilder().token(TOKEN).build()
 
 # Handlers
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("🌟 Welcome to AshisF&Obot! Use /status or /signal to continue.")
+    await update.message.reply_text("AshisFNObot is active 💹")
 
 async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("✅ AshisF&Obot is active and ready!")
+    await update.message.reply_text("Status: Operational ✅")
 
 async def signal(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    signal_text = get_sample_signal()
-    await update.message.reply_markdown(signal_text)
+    await update.message.reply_text(get_sample_signal())
 
-# Add handlers
 application.add_handler(CommandHandler("start", start))
 application.add_handler(CommandHandler("status", status))
 application.add_handler(CommandHandler("signal", signal))
 
-# Flask route for webhook
+# Flask setup
+app = Flask(__name__)
+
 @app.route(WEBHOOK_PATH, methods=["POST"])
-async def webhook():
+def webhook():
     update = Update.de_json(request.get_json(force=True), application.bot)
-    await application.process_update(update)
-    return "ok"
+    asyncio.get_event_loop().run_until_complete(application.process_update(update))
+    return "OK"
 
 @app.route("/", methods=["GET"])
-async def index():
-    return "AshisF&Obot is live 💥"
+def index():
+    return "AshisFNObot is alive 🔥"
 
-# Main entry
 if __name__ == "__main__":
-    import asyncio
-
-    async def run():
+    async def setup():
         await application.initialize()
-        await application.bot.set_webhook(url=WEBHOOK_URL)
+        await application.bot.set_webhook(WEBHOOK_URL)
         await application.start()
-        await application.updater.start_polling()
-        await application.updater.idle()
 
-    asyncio.run(run())
+    asyncio.run(setup())
+    app.run(host="0.0.0.0", port=10000)
