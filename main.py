@@ -29,9 +29,12 @@ application.add_handler(CommandHandler("start", start))
 def webhook():
     if request.method == "POST":
         update = Update.de_json(request.get_json(force=True), bot)
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.create_task(application.process_update(update))
+        @app.route("/webhook", methods=["POST"])
+def webhook():
+    if request.method == "POST":
+        update = Update.de_json(request.get_json(force=True), bot)
+        asyncio.run(application.process_update(update))
+        return "OK", 200
         return "OK", 200
 
 
