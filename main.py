@@ -7,12 +7,12 @@ from telegram.ext import Dispatcher, CommandHandler
 TOKEN = os.environ.get("BOT_TOKEN")
 WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
 
-# --- Flask and Telegram Setup ---
+# --- Flask + Telegram Setup ---
 app = Flask(__name__)
 bot = Bot(token=TOKEN)
 dispatcher = Dispatcher(bot, update_queue=None, workers=0, use_context=True)
 
-# --- Bot Command Handler ---
+# --- Bot Command ---
 def start(update, context):
     update.message.reply_text("Hello Ashis-da! Your bot is working 💕")
 
@@ -25,7 +25,7 @@ def webhook():
     dispatcher.process_update(update)
     return "OK"
 
-# --- Set Webhook Automatically ---
+# --- One-time Webhook Setup ---
 @app.before_first_request
 def set_webhook():
     bot.set_webhook(WEBHOOK_URL)
