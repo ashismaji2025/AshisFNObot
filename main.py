@@ -21,14 +21,13 @@ dispatcher.add_handler(CommandHandler("start", start))
 # --- Webhook Route ---
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    if request.method == "POST":
-        update = Update.de_json(request.get_json(force=True), bot)
+    update = Update.de_json(request.get_json(force=True), bot)
 
-        async def process():
-            await application.process_update(update)
+    async def process():
+        await application.process_update(update)
 
-        asyncio.run(process())
-        return "OK", 200
+    asyncio.run(process())
+    return "OK", 200
 
 # --- One-time Webhook Setup ---
 @app.before_first_request
