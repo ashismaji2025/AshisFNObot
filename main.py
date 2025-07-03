@@ -1,52 +1,48 @@
-import os
 import logging
 from flask import Flask, request
-from telegram import Update, Bot
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram import Update
+from telegram.ext import Application, CommandHandler, ContextTypes
+import asyncio
+import os
+
+TOKEN = os.getenv("BOT_TOKEN")  # keep token secure via environment variable
 
 # Enable logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Load environment variables
-TOKEN = os.environ.get("BOT_TOKEN")
-WEBHOOK_URL = os.environ.get("WEBHOOK_URL")  # Example: https://ashisfnobot.onrender.com/webhook
-
-# Initialize Flask app
+# Initialize Flask and Telegram Application
 app = Flask(__name__)
+application = Application.builder().token(TOKEN).build()
 
-# Initialize Telegram Application
-application = ApplicationBuilder().token(TOKEN).build()
 
-# Define command handler
+# Define a simple command
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Hello Ashis-da! Your bot is working 💕")
 
+
+# Register handler
 application.add_handler(CommandHandler("start", start))
 
-# Flask route for webhook
-@app.post("/webhook")
-async def webhook() -> str:
+
+# Webhook endpoint
+@app.route("/webhook", methods=["POST"])
+def webhook():
     try:
-        data = request.get_json(force=True)
-        update = Update.de_json(data, application.bot)
-        await application.process_update(update)
+        update = Update.de_json(request.get_json(force=True), application.bot)
+        asyncio.get_event_loop().create_task(application.process_update(update))
     except Exception as e:
-        logger.error("Webhook processing failed:", exc_info=e)
+        logger.error("Exception in webhook: %s", e)
         return "ERROR", 500
     return "OK", 200
 
-# Set the webhook on startup
-async def set_webhook():
-    await application.bot.set_webhook(url=WEBHOOK_URL)
-    logger.info(f"✅ Webhook set to: {WEBHOOK_URL}")
 
-# Start bot and Flask app
+# Root endpoint
+@app.route("/")
+def index():
+    return "AshisFNObot is running 💕"
+
+
 if __name__ == "__main__":
-    import asyncio
-
-    # Set webhook before starting Flask
-    asyncio.run(set_webhook())
-
-    # Start Flask
-    app.run(port=10000, host="0.0.0.0")
+    print("✅ Webhook set to: https://ashisfnobot.onrender.com/webhook")
+    app.run(host="0.0.0.0", port=10000)
