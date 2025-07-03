@@ -2,51 +2,46 @@ import os
 import asyncio
 from flask import Flask, request
 from telegram import Update, Bot
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram.ext import Application, CommandHandler, ContextTypes
 
 # Load environment variables
-TOKEN = os.getenv("BOT_TOKEN")
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")
+TOKEN = os.environ.get("BOT_TOKEN")
+WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
 
 # Initialize Flask app
 app = Flask(__name__)
+bot = Bot(token=TOKEN)
 
-# Initialize Telegram application
-application = ApplicationBuilder().token(TOKEN).build()
+# Create one shared event loop
+event_loop = asyncio.get_event_loop()
+application = Application.builder().token(TOKEN).loop(event_loop).build()
 
-# Define bot command
+# Define command handler
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Hello Ashis-da! Your bot is working 💕")
+    await update.message.reply_text("Hello Ashis-da! Bot is running 💖")
 
-# Add command handler
 application.add_handler(CommandHandler("start", start))
 
-# Webhook route
-@app.route("/webhook", methods=["POST"])
+# Webhook endpoint
+@app.route('/webhook', methods=["POST"])
 def webhook():
-    update = Update.de_json(request.get_json(force=True), application.bot)
+    try:
+        update = Update.de_json(request.get_json(force=True), bot)
+        event_loop.create_task(application.process_update(update))
+        return "OK", 200
+    except Exception as e:
+        print("Webhook Error:", e)
+        return "Internal Server Error", 500
 
-    async def handle():
-        await application.initialize()
-        await application.process_update(update)
+# Homepage
+@app.route("/")
+def home():
+    return "🌐 AshisFNObot is live and listening!"
 
-    asyncio.run(handle())
-    return "OK", 200
-
-# Health check route
-@app.route("/", methods=["GET"])
-def index():
-    return "✅ AshisFNObot is live", 200
-
-# ✅ Set webhook on startup
-async def setup_webhook():
-    await application.initialize()
-    await application.bot.set_webhook(WEBHOOK_URL)
-    print("✅ Webhook set to:", WEBHOOK_URL)
-
-# Run setup when script starts
-asyncio.run(setup_webhook())
-
-# Run the Flask app
+# Set webhook and start Flask
 if __name__ == "__main__":
+    print("✅ Setting webhook...")
+    event_loop.run_until_complete(bot.set_webhook(url=WEBHOOK_URL))
+    print("🚀 Bot is running at:", WEBHOOK_URL)
+    event_loop.run_until_complete(application.initialize())
     app.run(host="0.0.0.0", port=10000)
