@@ -25,7 +25,9 @@ application.add_handler(CommandHandler("start", start))
 @app.route("/webhook", methods=["POST"])
 def webhook():
     update = Update.de_json(request.get_json(force=True), bot)
-    asyncio.run(application.process_update(update))
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(application.process_update(update))
     return "OK", 200
 
 # === Run Flask App ===
