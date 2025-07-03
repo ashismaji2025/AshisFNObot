@@ -1,48 +1,46 @@
 import logging
+import os
 from flask import Flask, request
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
-import asyncio
-import os
 
-TOKEN = os.getenv("BOT_TOKEN")  # keep token secure via environment variable
+TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+WEBHOOK_URL = f"https://ashisfnobot.onrender.com/webhook"
 
-# Enable logging
+# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize Flask and Telegram Application
+# Initialize Flask app
 app = Flask(__name__)
+
+# Initialize Telegram application
 application = Application.builder().token(TOKEN).build()
 
-
-# Define a simple command
+# Define /start command
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Hello Ashis-da! Your bot is working 💕")
+    await update.message.reply_text("Hello Ashis-da! I’m alive and ready to serve 💕")
 
-
-# Register handler
+# Add handler
 application.add_handler(CommandHandler("start", start))
 
-
-# Webhook endpoint
-@app.route("/webhook", methods=["POST"])
-def webhook():
+# Flask route for webhook
+@app.post("/webhook")
+async def webhook():
     try:
         update = Update.de_json(request.get_json(force=True), application.bot)
-        asyncio.get_event_loop().create_task(application.process_update(update))
+        await application.process_update(update)
     except Exception as e:
-        logger.error("Exception in webhook: %s", e)
-        return "ERROR", 500
+        logger.exception("❌ Error in webhook")
     return "OK", 200
 
+# Set webhook only once at startup
+@app.before_first_request
+def set_webhook():
+    import asyncio
+    asyncio.run(application.bot.set_webhook(WEBHOOK_URL))
+    logger.info(f"✅ Webhook set to: {WEBHOOK_URL}")
 
-# Root endpoint
-@app.route("/")
-def index():
-    return "AshisFNObot is running 💕"
-
-
+# Run Flask app (Render automatically uses port 10000)
 if __name__ == "__main__":
-    print("✅ Webhook set to: https://ashisfnobot.onrender.com/webhook")
     app.run(host="0.0.0.0", port=10000)
