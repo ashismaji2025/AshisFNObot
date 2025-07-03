@@ -1,11 +1,12 @@
 import logging
 import os
+import asyncio
 from flask import Flask, request
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-WEBHOOK_URL = f"https://ashisfnobot.onrender.com/webhook"
+WEBHOOK_URL = "https://ashisfnobot.onrender.com/webhook"
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 # Initialize Flask app
 app = Flask(__name__)
 
-# Initialize Telegram application
+# Initialize Telegram bot app
 application = Application.builder().token(TOKEN).build()
 
 # Define /start command
@@ -24,7 +25,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Add handler
 application.add_handler(CommandHandler("start", start))
 
-# Flask route for webhook
+# Define webhook route
 @app.post("/webhook")
 async def webhook():
     try:
@@ -34,13 +35,12 @@ async def webhook():
         logger.exception("❌ Error in webhook")
     return "OK", 200
 
-# Set webhook only once at startup
-@app.before_first_request
-def set_webhook():
-    import asyncio
-    asyncio.run(application.bot.set_webhook(WEBHOOK_URL))
+# Manual webhook set on startup
+async def run_webhook():
+    await application.bot.set_webhook(WEBHOOK_URL)
     logger.info(f"✅ Webhook set to: {WEBHOOK_URL}")
 
-# Run Flask app (Render automatically uses port 10000)
+# Run Flask + set webhook
 if __name__ == "__main__":
+    asyncio.run(run_webhook())
     app.run(host="0.0.0.0", port=10000)
