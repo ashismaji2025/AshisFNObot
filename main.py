@@ -35,12 +35,11 @@ def webhook():
     loop.run_until_complete(process_update())
     return "OK", 200
 
-# === Webhook Setup (once on first call) ===
-@app.before_first_request
-def setup_webhook():
+
+# === Main App Runner ===
+if __name__ == "__main__":
+    # Set webhook before running Flask app
     asyncio.run(bot.set_webhook(url=WEBHOOK_URL))
     print("Webhook set to:", WEBHOOK_URL)
 
-# === Run Flask App ===
-if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
