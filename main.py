@@ -1,40 +1,50 @@
 import os
 import asyncio
 from flask import Flask, request
-from telegram import Update, Bot
+from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-# === Environment Variables ===
+# === Load Environment Variables ===
 TOKEN = os.environ.get("BOT_TOKEN")
 WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
 
-# === Initialize Flask App ===
+# === Flask App ===
 app = Flask(__name__)
 
-# === Initialize Telegram Application ===
+# === Create Asyncio Event Loop ===
+loop = asyncio.get_event_loop()
+
+# === Telegram Bot Application ===
 application = ApplicationBuilder().token(TOKEN).build()
 bot = application.bot
 
-# === Telegram Command Handler ===
+# === Command Handler ===
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Hello Ashis-da! Your bot is working 💕")
 
 application.add_handler(CommandHandler("start", start))
 
-# === Webhook Route ===
+
+# === Webhook Endpoint ===
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    update = Update.de_json(request.get_json(force=True), bot)
-    asyncio.create_task(application.process_update(update))
-    return "OK", 200
+    try:
+        update = Update.de_json(request.get_json(force=True), bot)
+        asyncio.run_coroutine_threadsafe(application.process_update(update), loop)
+        return "OK", 200
+    except Exception as e:
+        print("❌ Error in webhook:", e)
+        return "Error", 500
 
-# === One-time async initialization (including webhook) ===
+
+# === Initialize Everything ===
 async def init():
     await application.initialize()
+    await application.start()
     await bot.set_webhook(WEBHOOK_URL)
     print("✅ Webhook set to:", WEBHOOK_URL)
 
-# === Run Everything ===
+# === Run App ===
 if __name__ == "__main__":
-    asyncio.run(init())  # Set webhook + init
+    loop.run_until_complete(init())
     app.run(host="0.0.0.0", port=10000)
