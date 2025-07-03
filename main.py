@@ -2,52 +2,51 @@ import os
 import asyncio
 from flask import Flask, request
 from telegram import Update, Bot
-from telegram.ext import (
-    ApplicationBuilder, CommandHandler, ContextTypes
-)
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-# Load env vars
+# Load environment variables
 TOKEN = os.getenv("BOT_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 
-# Create Flask app
+# Initialize Flask app
 app = Flask(__name__)
 
-# Create Telegram Application (not initialized yet)
+# Initialize Telegram application
 application = ApplicationBuilder().token(TOKEN).build()
 
-# Define command handler
+# Define bot command
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Hello Ashis-da! Your bot is working 💕")
 
+# Add command handler
 application.add_handler(CommandHandler("start", start))
 
-# Define /webhook route
+# Webhook route
 @app.route("/webhook", methods=["POST"])
 def webhook():
     update = Update.de_json(request.get_json(force=True), application.bot)
 
-    # Use asyncio.run to safely run inside Flask thread
-    async def process():
+    async def handle():
         await application.initialize()
         await application.process_update(update)
 
-    asyncio.run(process())
+    asyncio.run(handle())
     return "OK", 200
 
-# Root route (health check)
-@app.route("/")
-def home():
+# Health check route
+@app.route("/", methods=["GET"])
+def index():
     return "✅ AshisFNObot is live", 200
 
-# Set webhook before first request
-@app.before_first_request
-def setup():
-    async def set_webhook():
-        await application.bot.set_webhook(WEBHOOK_URL)
-    asyncio.run(set_webhook())
+# ✅ Set webhook on startup
+async def setup_webhook():
+    await application.initialize()
+    await application.bot.set_webhook(WEBHOOK_URL)
     print("✅ Webhook set to:", WEBHOOK_URL)
 
-# Run Flask app
+# Run setup when script starts
+asyncio.run(setup_webhook())
+
+# Run the Flask app
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
