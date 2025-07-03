@@ -1,47 +1,54 @@
 import os
-import asyncio
+import logging
 from flask import Flask, request
 from telegram import Update, Bot
 from telegram.ext import Application, CommandHandler, ContextTypes
+import asyncio
 
 # Load environment variables
 TOKEN = os.environ.get("BOT_TOKEN")
 WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
 
-# Initialize Flask app
-app = Flask(__name__)
+# Shared event loop
+event_loop = asyncio.new_event_loop()
+asyncio.set_event_loop(event_loop)
+
+# Initialize bot and application
 bot = Bot(token=TOKEN)
+application = Application.builder().token(TOKEN).build()
 
-# Create one shared event loop
-event_loop = asyncio.get_event_loop()
-application = Application.builder().token(TOKEN).loop(event_loop).build()
+# Flask app
+app = Flask(__name__)
 
-# Define command handler
+# Logger (optional but helpful)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# /start command handler
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Hello Ashis-da! Bot is running 💖")
+    await update.message.reply_text("Hello Ashis-da! Your bot is working 💕")
 
+# Add handler to application
 application.add_handler(CommandHandler("start", start))
 
-# Webhook endpoint
-@app.route('/webhook', methods=["POST"])
+# Webhook receiver route
+@app.route("/webhook", methods=["POST"])
 def webhook():
-    try:
-        update = Update.de_json(request.get_json(force=True), bot)
-        event_loop.create_task(application.process_update(update))
-        return "OK", 200
-    except Exception as e:
-        print("Webhook Error:", e)
-        return "Internal Server Error", 500
+    update = Update.de_json(request.get_json(force=True), bot)
+    event_loop.create_task(application.process_update(update))
+    return "OK", 200
 
-# Homepage
+# Home route for testing
 @app.route("/")
 def home():
-    return "🌐 AshisFNObot is live and listening!"
+    return "🤖 AshisF&Obot is running."
 
-# Set webhook and start Flask
+# Start everything
 if __name__ == "__main__":
-    print("✅ Setting webhook...")
-    event_loop.run_until_complete(bot.set_webhook(url=WEBHOOK_URL))
-    print("🚀 Bot is running at:", WEBHOOK_URL)
-    event_loop.run_until_complete(application.initialize())
-    app.run(host="0.0.0.0", port=10000)
+    # Set the webhook just once at startup
+    async def startup():
+        await bot.set_webhook(url=WEBHOOK_URL)
+        logger.info(f"Webhook set to: {WEBHOOK_URL}")
+
+    event_loop.run_until_complete(startup())
+    app.run(port=10000, host="0.0.0.0")
