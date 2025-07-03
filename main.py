@@ -2,53 +2,61 @@ import os
 import logging
 from flask import Flask, request
 from telegram import Update, Bot
-from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram.ext import (
+    ApplicationBuilder, CommandHandler, ContextTypes
+)
 import asyncio
 
-# Load environment variables
-TOKEN = os.environ.get("BOT_TOKEN")
-WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
+# Logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# Shared event loop
-event_loop = asyncio.new_event_loop()
-asyncio.set_event_loop(event_loop)
-
-# Initialize bot and application
-bot = Bot(token=TOKEN)
-application = Application.builder().token(TOKEN).build()
+# Env variables
+TOKEN = os.getenv("BOT_TOKEN")
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 
 # Flask app
 app = Flask(__name__)
 
-# Logger (optional but helpful)
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Telegram Bot + Application
+bot = Bot(token=TOKEN)
+application = ApplicationBuilder().token(TOKEN).build()
 
-# /start command handler
+# Register command handlers
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Hello Ashis-da! Your bot is working 💕")
 
-# Add handler to application
 application.add_handler(CommandHandler("start", start))
 
-# Webhook receiver route
+# Webhook endpoint
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    update = Update.de_json(request.get_json(force=True), bot)
-    event_loop.create_task(application.process_update(update))
-    return "OK", 200
+    try:
+        update = Update.de_json(request.get_json(force=True), bot)
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(application.process_update(update))
+        return "OK", 200
+    except Exception as e:
+        logger.exception("Error in webhook processing")
+        return "Internal Server Error", 500
 
-# Home route for testing
-@app.route("/")
+# Home page
+@app.route("/", methods=["GET"])
 def home():
-    return "🤖 AshisF&Obot is running."
+    return "AshisF&Obot is live!", 200
 
-# Start everything
+# Webhook setup (run only once when hosted)
+@app.before_first_request
+def set_webhook():
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        loop.run_until_complete(bot.set_webhook(url=WEBHOOK_URL))
+        logger.info(f"✅ Webhook set to: {WEBHOOK_URL}")
+    except Exception as e:
+        logger.exception("Failed to set webhook")
+
+# Run app
 if __name__ == "__main__":
-    # Set the webhook just once at startup
-    async def startup():
-        await bot.set_webhook(url=WEBHOOK_URL)
-        logger.info(f"Webhook set to: {WEBHOOK_URL}")
-
-    event_loop.run_until_complete(startup())
-    app.run(port=10000, host="0.0.0.0")
+    app.run(host="0.0.0.0", port=10000)
