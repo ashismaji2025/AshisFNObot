@@ -13,8 +13,9 @@ app = Flask(__name__)
 
 # === Initialize Telegram Bot App ===
 application = ApplicationBuilder().token(TOKEN).build()
+bot = application.bot
 
-# === Command Handler ===
+# === Telegram Command Handler ===
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Hello Ashis-da! Your bot is working 💕")
 
@@ -22,18 +23,22 @@ application.add_handler(CommandHandler("start", start))
 
 # === Webhook Route ===
 @app.route("/webhook", methods=["POST"])
-async def webhook():
+def webhook():
     if request.method == "POST":
-        update = Update.de_json(request.get_json(force=True), application.bot)
-        await application.process_update(update)
+        update = Update.de_json(request.get_json(force=True), bot)
+        asyncio.create_task(application.process_update(update))
         return "OK", 200
 
-# === Auto Webhook Setup and App Run ===
-if __name__ == "__main__":
-    async def main():
+# === Startup Tasks: Webhook and Initialization ===
+@app.before_first_request
+def init_webhook():
+    async def setup():
         await application.initialize()
-        await application.bot.set_webhook(WEBHOOK_URL)
+        await bot.set_webhook(WEBHOOK_URL)
         print("Webhook set to:", WEBHOOK_URL)
-        app.run(host="0.0.0.0", port=10000)
 
-    asyncio.run(main())
+    asyncio.get_event_loop().create_task(setup())
+
+# === Run Flask ===
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000)
