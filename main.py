@@ -22,6 +22,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 application.add_handler(CommandHandler("start", start))
 
+# Optional: Basic homepage route to prevent 404
+@app.route("/", methods=["GET"])
+def home():
+    return "AshisF&Obot is alive and running 💕", 200
 # === Webhook Route ===
 @app.route("/webhook", methods=["POST"])
 def webhook():
