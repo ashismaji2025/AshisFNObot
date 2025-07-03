@@ -1,50 +1,51 @@
 import os
 import asyncio
 from flask import Flask, request
-from telegram import Update
+from telegram import Bot, Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-# === Environment Variables ===
+# Load environment variables
 TOKEN = os.environ.get("BOT_TOKEN")
 WEBHOOK_URL = os.environ.get("WEBHOOK_URL")
 
-# === Flask App ===
+# Initialize Flask app
 app = Flask(__name__)
 
-# === Event Loop and Telegram Bot App ===
-loop = asyncio.get_event_loop()
+# Telegram Bot and Application
+bot = Bot(token=TOKEN)
 application = ApplicationBuilder().token(TOKEN).build()
-bot = application.bot
 
-# === Telegram Command Handler ===
+# --- Command Handlers ---
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Hello Ashis-da! Your bot is working 💕")
 
 application.add_handler(CommandHandler("start", start))
 
-# Optional: Basic homepage route to prevent 404
-@app.route("/", methods=["GET"])
-def home():
-    return "AshisF&Obot is alive and running 💕", 200
-# === Webhook Route ===
+# --- Webhook Endpoint ---
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    try:
+    if request.method == "POST":
         update = Update.de_json(request.get_json(force=True), bot)
-        asyncio.run_coroutine_threadsafe(application.process_update(update), loop)
+
+        # Run async methods synchronously inside Flask thread
+        async def handle_update():
+            await application.initialize()
+            await application.process_update(update)
+
+        asyncio.run(handle_update())
         return "OK", 200
-    except Exception as e:
-        print("❌ Error in /webhook:", e)
-        return "Webhook Error", 500
 
-# === Startup Initializer ===
-async def startup():
-    await application.initialize()
-    await application.start()
-    await bot.set_webhook(WEBHOOK_URL)
-    print("✅ Webhook set to:", WEBHOOK_URL)
+# --- Root Route for Health Check ---
+@app.route("/", methods=["GET"])
+def index():
+    return "AshisFNObot is live 🚀", 200
 
-# === Run Everything ===
+# --- Set Webhook at Startup ---
+@app.before_first_request
+def set_webhook():
+    asyncio.run(bot.set_webhook(url=WEBHOOK_URL))
+    print(f"✅ Webhook set to: {WEBHOOK_URL}")
+
+# --- Run Flask App ---
 if __name__ == "__main__":
-    loop.run_until_complete(startup())
     app.run(host="0.0.0.0", port=10000)
