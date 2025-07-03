@@ -38,8 +38,13 @@ def webhook():
         return "Internal Server Error", 500
 
 # Startup Webhook Setup
-@app.before_first_request
+@app.before_request
 def init():
+    if not hasattr(app, 'webhook_set'):
+        app.webhook_set = True
+        import asyncio
+        asyncio.get_event_loop().run_until_complete(bot.set_webhook(url=WEBHOOK_URL))
+        logger.info(f"Webhook set to: {WEBHOOK_URL}")
     logger.info("Setting webhook...")
     import asyncio
     asyncio.get_event_loop().run_until_complete(bot.set_webhook(url=WEBHOOK_URL))
