@@ -5,11 +5,9 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
-# Logging setup
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Command handler
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("Hello Ashis-da! I’m alive and ready to serve 💕")
 
