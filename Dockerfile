@@ -16,12 +16,12 @@ RUN apt-get update && apt-get install -y \
 # Copy project files
 COPY . /app/
 
-# Install dependencies
+# Install Python dependencies
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-# Expose the port Flask will use
+# Expose the port used by PTB's native webhook server
 EXPOSE 10000
 
-# Run the bot
+# Run the Telegram bot
 CMD ["python", "main.py"]
